@@ -1,0 +1,104 @@
+DB_NAME=your_db_name
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+BITCOINIST_URL=https://bitcoinist.com
+BITCOINIST_SLEEP=1
+INPUT_CSV=input.csv
+OUTPUT_CSV=output.csv
+BLOOMBERG_CRYPTO_URL=https://www.bloomberg.com/crypto
+# --- Reddit API ---
+REDDIT_CLIENT_ID=your_client_id
+REDDIT_CLIENT_SECRET=your_client_secret
+REDDIT_USER_AGENT=your_user_agent
+
+# --- URLs ---
+REUTERS_URL=https://www.reuters.com/markets/cryptocurrencies
+COINDESK_URL=https://www.coindesk.com/
+BLOOMBERG_CRYPTO_URL=https://www.bloomberg.com/crypto
+BITCOINIST_URL=https://bitcoinist.com
+BITCOINIST_SLEEP=1
+
+# --- CSV ---
+INPUT_CSV=input.csv
+OUTPUT_CSV=output.csv
+
+API_ID=1234567
+API_HASH=abcdef1234567890abcdef1234567890
+PHONE_NUMBER=+10001234567
+
+# Для telethon_test_3.py
+TELEGRAM_CHANNELS=if_market_news
+
+# X (Twitter) парсинг
+X_SEARCH_KEYWORD=искусственный интеллект
+X_MAX_POSTS=10
+
+# Yahoo Finance парсинг
+YAHOO_BASE_URL=https://finance.yahoo.com
+YAHOO_SECTION=/topic/crypto
+YAHOO_DELAY=1
+YAHOO_CSV=yahoo_crypto_news.csv
+YAHOO_PARSE_FULL=true
+
+# get_fell_1.py
+SENTIMENT_TEXT=Цена биткоина резко упала за сутки на 10 процентов.
+
+# nlp_4.py
+FELT_DATA_PATH=crypto_news_data.csv
+
+# nlp_model_1.py
+CRYPTO_CLS_DATA=crypto_news_total.csv
+
+# reader_file_1.py
+READER_INPUT_CSV=channels_content_2024_1_1/if_crypto_ru.csv
+READER_OUTPUT_TXT=output.txt
+
+# parse_news_2.py
+NEWS_INPUT_CSV=crypnews247.csv
+NEWS_OUTPUT_CSV=crypto_news_semantic.csv
+
+TRANSFORMER_MODEL=distilbert-base-uncased
+SENTIMENT_TRAIN_CSV=news_with_sentiment.csv
+SENTIMENT_MODEL_DIR=./sentiment_model
+
+WIKI_TOPIC=Криптовалюта
+WIKI_MAX_ARTICLES=100
+
+# pipeline_2.py
+PIPELINE_TEXT_FILE=text_1.txt
+PIPELINE_QUERY=Что такое RAG
+
+# pipeline_3.py
+GEMINI_API_KEY=your_gemini_api_key
+GEN_QUERY=Что такое криптовалюта
+JSONL_FILE=rag_data.jsonl
+
+# prepare_data_1.py
+TEXT_DATA_PATH=your_data.txt
+
+# rag_2_train.py
+KB_PATH=knowledge_base.json
+EMBED_PATH=doc_embeddings.npy
+FAISS_INDEX_PATH=faiss_index.index
+EMBED_MODEL=all-MiniLM-L6-v2
+
+GEMINI_API_KEY=your_api_key_here
+
+BINANCE_SYMBOLS=ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,BNBUSDT,LINKUSDT,BTCUSDT
+
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+
+BINANCE_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT
+
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+
