@@ -1,0 +1,24 @@
+# Python
+pycache/
+*.py[cod]
+*.so
+*.egg-info/
+*.pkl
+
+# Environment
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Streamlit cache
+.streamlit/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+data/raw/
+data/processed/
