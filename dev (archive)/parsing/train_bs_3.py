@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report
 from torch.utils.data import DataLoader, TensorDataset
-from test_forex_2 import TimeSeriesSimulator
+from crypto_monitoring.src.test_forex_2 import TimeSeriesSimulator
 
 DATA_PATH = "datasets/cl_0a1_i1m_w20_s5_p1.csv"
 SAVE_DIR = "trained_signal_models_3"

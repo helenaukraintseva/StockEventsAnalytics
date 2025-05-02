@@ -1,5 +1,4 @@
 import os
-import time
 import joblib
 import logging
 import pandas as pd
@@ -15,7 +14,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 
-from test_forex_2 import TimeSeriesSimulator
+from crypto_monitoring.src.test_forex_2 import TimeSeriesSimulator
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

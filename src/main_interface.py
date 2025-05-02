@@ -1,20 +1,23 @@
-import os
 import streamlit as st
+import os
 import pandas as pd
 import requests
 import numpy as np
-from datetime import datetime, timedelta
-import random
-import logging
 from settings import tokens, tokens_dict
-from config import api_id, api_hash, phone
 from dotenv import load_dotenv
 import logging
 
 load_dotenv()
+os.makedirs(",,/logs", exist_ok=True)
 
 # --- Настройка логирования ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s",
+handlers=[
+        logging.FileHandler("../logs/app.log", encoding="utf-8"),  # Сохранять в файл
+        logging.StreamHandler()  # Плюс вывод в консоль
+    ]
+)
 
 # --- Настройка страницы ---
 st.set_page_config(page_title="Крипто-график и статистика", layout="wide")
@@ -23,17 +26,20 @@ st.session_state.retriever = None
 st.title("Криптовалютный мониторинг")
 
 # --- Боковое меню с вкладками ---
-tab = st.sidebar.radio("Меню:", [
-    "Главное меню",
-    "График криптовалют",
-    "Предсказать направление",
-    "Предсказать цену",
-    "Покупка/продажа",
-    "Сигналы",
-    "Индикаторы",
-    "Анализ новостей",
-    "Crypto RAG",
-])
+tab = st.sidebar.radio(
+    "Меню:",
+    [
+        "Главное меню",
+        "График криптовалют",
+        "Предсказать направление",
+        "Предсказать цену",
+        "Покупка/продажа",
+        "Сигналы",
+        "Индикаторы",
+        "Анализ новостей",
+        "Crypto RAG",
+    ],
+)
 
 # --- Хранение данных в сессии ---
 if "price_history" not in st.session_state:
@@ -41,11 +47,16 @@ if "price_history" not in st.session_state:
 
 if tab == "Главное меню":
     st.markdown("# CryptoInsight")
-    st.markdown("### Многофункциональная платформа для анализа и мониторинга криптовалютного рынка в реальном времени.")
+    st.markdown(
+        "### Многофункциональная платформа для анализа и мониторинга криптовалютного рынка в реальном времени."
+    )
     st.markdown("---")
-    st.markdown("**Выберите режим работы в левом меню, чтобы начать.** Ниже краткое описание возможностей:")
+    st.markdown(
+        "**Выберите режим работы в левом меню, чтобы начать.** Ниже краткое описание возможностей:"
+    )
 
-    st.markdown("""
+    st.markdown(
+        """
     ### Обзор режимов:
 
     - **График криптовалют**  
@@ -74,7 +85,8 @@ if tab == "Главное меню":
 
     ---
     Используйте боковую панель для выбора режима. Все данные обновляются в реальном времени и доступны без задержек.
-    """)
+    """
+    )
 
 elif tab == "График криптовалют":
     import plotly.express as px
@@ -111,7 +123,10 @@ elif tab == "График криптовалют":
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-            df = pd.DataFrame(data, columns=["time", "Open", "High", "Low", "price", "Volume", *["_"]*6])
+            df = pd.DataFrame(
+                data,
+                columns=["time", "Open", "High", "Low", "price", "Volume", *["_"] * 6],
+            )
             df = df[["time", "price"]]
             df["time"] = pd.to_datetime(df["time"], unit="ms") + pd.Timedelta(hours=3)
             df["price"] = df["price"].astype(float)
@@ -122,20 +137,26 @@ elif tab == "График криптовалют":
 
     col1, col2 = st.columns(2)
     with col1:
-        selected_crypto = st.selectbox("Выберите криптовалюту:", list(crypto_options.keys()), key="crypto_graph")
+        selected_crypto = st.selectbox(
+            "Выберите криптовалюту:", list(crypto_options.keys()), key="crypto_graph"
+        )
 
     with col2:
-        update_interval = st.selectbox("Частота обновления (мин):", [1, 5, 10, 15, 30], key="interval_graph")
+        update_interval = st.selectbox(
+            "Частота обновления (мин):", [1, 5, 10, 15, 30], key="interval_graph"
+        )
 
     if selected_crypto not in st.session_state.price_history:
         st.session_state.price_history[selected_crypto] = []
 
     placeholder = st.empty()
     if len(st.session_state.price_history[selected_crypto]) < 100:
-        st.write("\U0001F504 Собираем данные...")
+        st.write("\U0001f504 Собираем данные...")
         historical_data = get_historical_data(crypto_options[selected_crypto])
         if historical_data is not None:
-            st.session_state.price_history[selected_crypto] = historical_data.to_dict("records")
+            st.session_state.price_history[selected_crypto] = historical_data.to_dict(
+                "records"
+            )
 
     @st.cache_data(ttl=60)
     def load_historical_data(symbol):
@@ -161,7 +182,7 @@ elif tab == "График криптовалют":
             y="price",
             title=f"График {selected_crypto}",
             labels={"time": "Время", "price": "Цена (USDT)"},
-            template="plotly_dark"
+            template="plotly_dark",
         )
         st.plotly_chart(fig, use_container_width=True)
     else:
@@ -175,11 +196,7 @@ elif tab == "Предсказать направление":
     st.title("Криптовалютный график и тренд-прогноз")
 
     # --- Настройки ---
-    tokens_dict = {
-        "BTC/USDT": "BTCUSDT",
-        "ETH/USDT": "ETHUSDT",
-        "BNB/USDT": "BNBUSDT"
-    }
+    tokens_dict = {"BTC/USDT": "BTCUSDT", "ETH/USDT": "ETHUSDT", "BNB/USDT": "BNBUSDT"}
 
     selected_crypto = st.selectbox("Криптовалюта:", list(tokens_dict.keys()))
     interval = st.selectbox("Интервал:", ["1m", "5m", "10m"])
@@ -237,7 +254,10 @@ elif tab == "Предсказать направление":
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-            df = pd.DataFrame(data, columns=["time", "Open", "High", "Low", "price", "Volume", *["_"]*6])
+            df = pd.DataFrame(
+                data,
+                columns=["time", "Open", "High", "Low", "price", "Volume", *["_"] * 6],
+            )
             df = df[["time", "price"]]
             df["time"] = pd.to_datetime(df["time"], unit="ms") + pd.Timedelta(hours=3)
             df["price"] = df["price"].astype(float)
@@ -262,23 +282,25 @@ elif tab == "Предсказать направление":
             "reversal_up": "blue",
             "reversal_down": "orange",
             "flat": "gray",
-            "none": "white"
+            "none": "white",
         }
 
         fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=df["time"],
-            y=df["price"],
-            mode="lines",
-            name="Цена",
-            line=dict(color=colors.get(trend_signal, "white"))
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=df["time"],
+                y=df["price"],
+                mode="lines",
+                name="Цена",
+                line=dict(color=colors.get(trend_signal, "white")),
+            )
+        )
 
         fig.update_layout(
             title=f"{selected_crypto} ({interval}) — тренд: {trend_signal}",
             template="plotly_dark",
             xaxis_title="Время",
-            yaxis_title="Цена"
+            yaxis_title="Цена",
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -287,14 +309,16 @@ elif tab == "Предсказать направление":
         st.metric("Сигнал", trend_signal)
 
         st.write("Логика определения тренда:")
-        st.markdown(f"""
+        st.markdown(
+            f"""
         - Используется **EMA({trend_window})**, волатильность и нормализованное изменение
         - Используются технические индикаторы: **MACD**, **RSI**
         - **trend_up**: устойчивый рост + нормализованная производная > 0
         - **trend_down**: устойчивое падение
         - **flat**: нет ярко выраженного движения
         - **reversal_up / down**: развороты на основе RSI
-        """)
+        """
+        )
 
 elif tab == "Покупка/продажа":
     import joblib
@@ -305,7 +329,9 @@ elif tab == "Покупка/продажа":
     crypto_options = tokens_dict
     MODEL_DIR = "models/"
 
-    def get_crypto_data(symbol, interval="1m", window_size=20, forecast_horizon=100, reserve_steps=50):
+    def get_crypto_data(
+        symbol, interval="1m", window_size=20, forecast_horizon=100, reserve_steps=50
+    ):
         """
         Получение исторических данных с Binance API.
 
@@ -322,14 +348,17 @@ elif tab == "Покупка/продажа":
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             data = response.json()
-            df = pd.DataFrame(data, columns=[
-                "time", "open", "high", "low", "close", "volume"])
+            df = pd.DataFrame(
+                data, columns=["time", "open", "high", "low", "close", "volume"]
+            )
             df = df[["time", "open", "high", "low", "close", "volume"]]
             df["time"] = pd.to_datetime(df["time"], unit="ms")
-            df = df.astype({col: float for col in ["open", "high", "low", "close", "volume"]})
+            df = df.astype(
+                {col: float for col in ["open", "high", "low", "close", "volume"]}
+            )
             return df
         except Exception as e:
-            st.error(f"\u274C Ошибка при запросе данных с Binance: {e}")
+            st.error(f"\u274c Ошибка при запросе данных с Binance: {e}")
             return pd.DataFrame()
 
     @st.cache_resource
@@ -355,15 +384,13 @@ elif tab == "Покупка/продажа":
 
     scaler = joblib.load(MODEL_DIR + "scaler_signal.pkl")
 
-    interval_options = {
-        "1 минута": "1m",
-        "5 минут": "5m",
-        "15 минут": "15m"
-    }
+    interval_options = {"1 минута": "1m", "5 минут": "5m", "15 минут": "15m"}
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        selected_crypto = st.selectbox("Выберите криптовалюту:", list(crypto_options.keys()))
+        selected_crypto = st.selectbox(
+            "Выберите криптовалюту:", list(crypto_options.keys())
+        )
     with col2:
         interval = st.selectbox("Выберите интервал:", ["1m", "5m", "15m", "1h", "1d"])
     with col3:
@@ -374,7 +401,7 @@ elif tab == "Покупка/продажа":
     model = load_ml_model(selected_model)
     symbol = crypto_options[selected_crypto]
 
-    st.subheader(f"\U0001F4CA График {symbol} ({interval})")
+    st.subheader(f"\U0001f4ca График {symbol} ({interval})")
     df = get_crypto_data(symbol, interval)
     df = df.drop("time", axis=1)
 
@@ -388,7 +415,7 @@ elif tab == "Покупка/продажа":
         """
         features = []
         for i in range(len(df) - window_size + 1):
-            window = df.iloc[i:i + window_size].values.flatten()
+            window = df.iloc[i : i + window_size].values.flatten()
             features.append(window)
         return pd.DataFrame(features)
 
@@ -396,19 +423,29 @@ elif tab == "Покупка/продажа":
         df_display = df.copy()
         df = build_windowed_features(df, window_size=20)
 
-        st.subheader("\U0001F4C8 Предсказание")
+        st.subheader("\U0001f4c8 Предсказание")
         X_scaled = df  # X_scaled = scaler.transform(df) — по желанию
         y_pred = model.predict(X_scaled)
 
-        df_pred = df_display.iloc[-len(y_pred):].copy()
+        df_pred = df_display.iloc[-len(y_pred) :].copy()
         df_pred["Signal"] = y_pred
 
         fig, ax = plt.subplots(figsize=(12, 5))
         ax.plot(df_pred.index, df_pred["close"], label="Цена", color="blue")
-        ax.scatter(df_pred.index[df_pred["Signal"] == 1], df_pred["close"][df_pred["Signal"] == 1],
-                   color="green", label="\U0001F4C8 Покупка", marker="^")
-        ax.scatter(df_pred.index[df_pred["Signal"] == -1], df_pred["close"][df_pred["Signal"] == -1],
-                   color="red", label="\U0001F4C9 Продажа", marker="v")
+        ax.scatter(
+            df_pred.index[df_pred["Signal"] == 1],
+            df_pred["close"][df_pred["Signal"] == 1],
+            color="green",
+            label="\U0001f4c8 Покупка",
+            marker="^",
+        )
+        ax.scatter(
+            df_pred.index[df_pred["Signal"] == -1],
+            df_pred["close"][df_pred["Signal"] == -1],
+            color="red",
+            label="\U0001f4c9 Продажа",
+            marker="v",
+        )
         ax.set_title(f"{symbol} ({interval}) - {selected_model}")
         ax.set_xlabel("Время")
         ax.set_ylabel("Цена (USDT)")
@@ -417,23 +454,30 @@ elif tab == "Покупка/продажа":
 
         last_signal = df_pred["Signal"].iloc[-1]
         if last_signal == 1:
-            recommendation = "\U0001F4C8 **Покупка**"
+            recommendation = "\U0001f4c8 **Покупка**"
             recommendation_color = "green"
         elif last_signal == -1:
-            recommendation = "\U0001F4C9 **Продажа**"
+            recommendation = "\U0001f4c9 **Продажа**"
             recommendation_color = "red"
         else:
-            recommendation = "\u23F3 **Держите**"
+            recommendation = "\u23f3 **Держите**"
             recommendation_color = "gray"
 
-        st.markdown(f"<h2 style='color: {recommendation_color}; text-align: center;'>{recommendation}</h2>", unsafe_allow_html=True)
-        st.subheader(f"\U0001F4C8 Прогноз модели {selected_model}: **{recommendation}**")
+        st.markdown(
+            f"<h2 style='color: {recommendation_color}; text-align: center;'>{recommendation}</h2>",
+            unsafe_allow_html=True,
+        )
+        st.subheader(
+            f"\U0001f4c8 Прогноз модели {selected_model}: **{recommendation}**"
+        )
 
 elif tab == "Сигналы":
     import psycopg2
     import logging
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
 
     st.title("Сигналы для трейдинга криптовалют")
 
@@ -454,7 +498,7 @@ elif tab == "Сигналы":
                 user=os.getenv("DB_USER"),
                 password=os.getenv("DB_PASSWORD"),
                 host=os.getenv("DB_HOST"),
-                port=os.getenv("DB_PORT")
+                port=os.getenv("DB_PORT"),
             )
             query = """
                 SELECT *
@@ -483,7 +527,7 @@ elif tab == "Сигналы":
         st.warning("Нет данных для отображения")
     else:
         df["delta"] = df["end_price"] - df["start_price"]
-        st.subheader(f"\U0001F4CB Сигналы по {selected_crypto} ({selected_model})")
+        st.subheader(f"\U0001f4cb Сигналы по {selected_crypto} ({selected_model})")
 
         def highlight_signal(row):
             """
@@ -493,16 +537,15 @@ elif tab == "Сигналы":
             :return: Стили для строки
             """
             if row["delta"] > 0:
-                return [''] * 5 + ['background-color: green; color: white']
+                return [""] * 5 + ["background-color: green; color: white"]
             elif row["delta"] < 0:
-                return [''] * 5 + ['background-color: red; color: white']
+                return [""] * 5 + ["background-color: red; color: white"]
             else:
-                return [''] * 5 + ['background-color: gray; color: black']
+                return [""] * 5 + ["background-color: gray; color: black"]
 
-        styled_df = df[[
-            "start_time", "end_time", "signal", "start_price",
-            "end_price", "delta"
-        ]].style.apply(highlight_signal, axis=1)
+        styled_df = df[
+            ["start_time", "end_time", "signal", "start_price", "end_price", "delta"]
+        ].style.apply(highlight_signal, axis=1)
 
         st.dataframe(styled_df, use_container_width=True)
 
@@ -511,7 +554,9 @@ elif tab == "Индикаторы":
     import matplotlib.pyplot as plt
     import logging
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
 
     st.title("Crypto Trading Predictor")
 
@@ -531,7 +576,9 @@ elif tab == "Индикаторы":
         "ARIMA": algorithms.AlgorithmARIMA,
     }
 
-    def get_crypto_data(symbol, interval="1m", window_size=20, forecast_horizon=100, reserve_steps=50):
+    def get_crypto_data(
+        symbol, interval="1m", window_size=20, forecast_horizon=100, reserve_steps=50
+    ):
         """
         Получение исторических данных с Binance API.
 
@@ -548,18 +595,23 @@ elif tab == "Индикаторы":
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             data = response.json()
-            df = pd.DataFrame(data, columns=[
-                "time", "open", "high", "low", "close", "volume"])
+            df = pd.DataFrame(
+                data, columns=["time", "open", "high", "low", "close", "volume"]
+            )
             df = df[["time", "open", "high", "low", "close", "volume"]]
             df["time"] = pd.to_datetime(df["time"], unit="ms")
-            df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
+            df[["open", "high", "low", "close", "volume"]] = df[
+                ["open", "high", "low", "close", "volume"]
+            ].astype(float)
             return df
         except Exception as e:
             logging.error("Ошибка при запросе данных с Binance: %s", e)
             return pd.DataFrame()
 
     symbols = tokens
-    symbol = st.selectbox("Выберите криптовалюту", symbols, index=symbols.index("BTCUSDT"))
+    symbol = st.selectbox(
+        "Выберите криптовалюту", symbols, index=symbols.index("BTCUSDT")
+    )
     interval = st.selectbox("Выберите интервал", ["1m", "5m", "15m", "1h", "1d"])
     selected_algorithm = st.selectbox("Выберите алгоритм", list(ALGORITHMS.keys()))
 
@@ -591,8 +643,12 @@ elif tab == "Индикаторы":
             algorithm.get_param(period=int(period))
         elif selected_algorithm == "BollingerBands":
             window = st.selectbox("Период SMA", list(range(5, 30)))
-            nbdev_up = st.selectbox("Коэф. вверх", [round(i * 0.1, 1) for i in range(1, 50)], index=20)
-            nbdev_dn = st.selectbox("Коэф. вниз", [round(i * 0.1, 1) for i in range(1, 50)], index=20)
+            nbdev_up = st.selectbox(
+                "Коэф. вверх", [round(i * 0.1, 1) for i in range(1, 50)], index=20
+            )
+            nbdev_dn = st.selectbox(
+                "Коэф. вниз", [round(i * 0.1, 1) for i in range(1, 50)], index=20
+            )
             algorithm.get_param(window=window, nbdev_up=nbdev_up, nbdev_dn=nbdev_dn)
         elif selected_algorithm == "ARIMA":
             p = st.selectbox("AR порядок", list(range(1, 5)))
@@ -612,17 +668,35 @@ elif tab == "Индикаторы":
         ax.set_ylabel("Цена (USDT)")
 
         if "Signal" in df:
-            ax.scatter(df["time"][df["Signal"] == 1], df["close"][df["Signal"] == 1], color="green", label="Покупка", marker="^")
-            ax.scatter(df["time"][df["Signal"] == -1], df["close"][df["Signal"] == -1], color="red", label="Продажа", marker="v")
+            ax.scatter(
+                df["time"][df["Signal"] == 1],
+                df["close"][df["Signal"] == 1],
+                color="green",
+                label="Покупка",
+                marker="^",
+            )
+            ax.scatter(
+                df["time"][df["Signal"] == -1],
+                df["close"][df["Signal"] == -1],
+                color="red",
+                label="Продажа",
+                marker="v",
+            )
 
         # Пример отображения индикатора на втором графике (если есть нужные колонки)
         if selected_algorithm == "RSI" and "RSI" in df:
             ax_ind.plot(df["time"], df["RSI"], label="RSI", color="purple")
-            ax_ind.axhline(70, color='green', linestyle='--')
-            ax_ind.axhline(30, color='red', linestyle='--')
+            ax_ind.axhline(70, color="green", linestyle="--")
+            ax_ind.axhline(30, color="red", linestyle="--")
         elif selected_algorithm == "MACD" and "MACD" in df:
             ax_ind.plot(df["time"], df["MACD"], label="MACD", color="purple")
-            ax_ind.plot(df["time"], df["Signal_line"], label="Signal", color="red", linestyle="--")
+            ax_ind.plot(
+                df["time"],
+                df["Signal_line"],
+                label="Signal",
+                color="red",
+                linestyle="--",
+            )
 
         ax.legend()
         ax.grid(True)
@@ -645,11 +719,15 @@ elif tab == "Предсказать цену":
     import plotly.graph_objects as go
     import os
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
 
     st.title("Прогнозирование цены криптовалюты")
 
-    def get_crypto_data(symbol, interval="1m", window_size=20, forecast_horizon=100, reserve_steps=50):
+    def get_crypto_data(
+        symbol, interval="1m", window_size=20, forecast_horizon=100, reserve_steps=50
+    ):
         """
         Получение исторических данных с Binance API.
 
@@ -668,18 +746,23 @@ elif tab == "Предсказать цену":
             response.raise_for_status()
             data = response.json()
 
-            df = pd.DataFrame(data, columns=[
-                "time", "open", "high", "low", "close", "volume"])
+            df = pd.DataFrame(
+                data, columns=["time", "open", "high", "low", "close", "volume"]
+            )
             df = df[["time", "open", "high", "low", "close", "volume"]]
             df["time"] = pd.to_datetime(df["time"], unit="ms")
-            df = df.astype({col: float for col in ["open", "high", "low", "close", "volume"]})
+            df = df.astype(
+                {col: float for col in ["open", "high", "low", "close", "volume"]}
+            )
             return df
 
         except Exception as e:
             logging.error("Ошибка при запросе данных с Binance: %s", e)
             return pd.DataFrame()
 
-    def predict_future_prices(model_name, last_sequence, model_dir="models", n_steps=100):
+    def predict_future_prices(
+        model_name, last_sequence, model_dir="models", n_steps=100
+    ):
         """
         Предсказание будущих значений модели на основе последнего окна.
 
@@ -739,39 +822,51 @@ elif tab == "Предсказать цену":
         last_sequence = recent_window.values.reshape(1, -1)
 
         model_filename = model_options[selected_model]
-        predicted_raw = predict_future_prices(model_filename, last_sequence=last_sequence, n_steps=30)
+        predicted_raw = predict_future_prices(
+            model_filename, last_sequence=last_sequence, n_steps=30
+        )
 
-        future_times = [last_time + (i + 1) * time_delta for i in range(len(predicted_raw))]
+        future_times = [
+            last_time + (i + 1) * time_delta for i in range(len(predicted_raw))
+        ]
         df_pred = pd.DataFrame({"time": future_times, "PredictedValue": predicted_raw})
 
         fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=df["time"],
-            y=df["close"],
-            mode="lines",
-            name="Фактическая цена",
-            line=dict(color="blue")
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=df["time"],
+                y=df["close"],
+                mode="lines",
+                name="Фактическая цена",
+                line=dict(color="blue"),
+            )
+        )
 
-        fig.add_trace(go.Scatter(
-            x=df_pred["time"],
-            y=df_pred["PredictedValue"],
-            mode="lines",
-            name="Прогноз цены",
-            line=dict(color="red", dash="dash")
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=df_pred["time"],
+                y=df_pred["PredictedValue"],
+                mode="lines",
+                name="Прогноз цены",
+                line=dict(color="red", dash="dash"),
+            )
+        )
 
         fig.update_layout(
             title=f"{symbol} — Прогноз цены ({interval})",
             xaxis_title="Время",
             yaxis_title="Цена (USDT)",
             template="plotly_dark",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            legend=dict(
+                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+            ),
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
-        st.info(f"Последнее предсказание: **{round(df_pred.iloc[-1]['PredictedValue'], 4)} USDT**")
+        st.info(
+            f"Последнее предсказание: **{round(df_pred.iloc[-1]['PredictedValue'], 4)} USDT**"
+        )
 
 elif tab == "Crypto RAG":
     st.title("RAG-система для вопросов")
@@ -785,7 +880,9 @@ elif tab == "Crypto RAG":
             from langchain_community.document_loaders import TextLoader
             from config import gemini_api
 
-            def prepare_model(text_path: str = "text_1.txt", model_name: str = "all-MiniLM-L6-v2"):
+            def prepare_model(
+                text_path: str = "text_1.txt", model_name: str = "all-MiniLM-L6-v2"
+            ):
                 """
                 Подготавливает модель генерации и индекс ретривера.
 
@@ -844,7 +941,9 @@ elif tab == "Crypto RAG":
 
     if st.button("Получить ответ") and query.strip():
         with st.spinner("Думаю..."):
-            response = answer_query(st.session_state.model, st.session_state.retriever, query)
+            response = answer_query(
+                st.session_state.model, st.session_state.retriever, query
+            )
             st.success(response)
 
 
@@ -862,17 +961,13 @@ elif tab == "Анализ новостей":
         :param sentiment: строка с меткой (Positive, Negative, Neutral)
         :return: цвет фона в HEX
         """
-        mapping = {
-            "positive": "#d4edda",
-            "negative": "#f8d7da",
-            "neutral": "#e2e3e5"
-        }
+        mapping = {"positive": "#d4edda", "negative": "#f8d7da", "neutral": "#e2e3e5"}
         return mapping.get(sentiment.lower(), "#ffffff")
 
     # --- Загрузка моделей ---
-    crypto_pipe = joblib.load("NLP/sentiment_model/crypto_classifier_model.pkl")
-    sentiment_pipe = joblib.load("NLP/sentiment_model/felt_classifier_model.pkl")
-    label_encoder = joblib.load("NLP/sentiment_model/label_encoder.pkl")
+    crypto_pipe = joblib.load("../dev (archive)/NLP/sentiment_model/crypto_classifier_model.pkl")
+    sentiment_pipe = joblib.load("../dev (archive)/NLP/sentiment_model/felt_classifier_model.pkl")
+    label_encoder = joblib.load("../dev (archive)/NLP/sentiment_model/label_encoder.pkl")
 
     def fetch_news(source: str, days_back: int):
         """
@@ -882,8 +977,13 @@ elif tab == "Анализ новостей":
         :param days_back: сколько дней назад брать новости
         :return: список словарей с новостями
         """
-        return parse_telegram_news(days_back=days_back, channel_title=source,
-                                   api_id=api_id, api_hash=api_hash, phone=phone)
+        return parse_telegram_news(
+            days_back=days_back,
+            channel_title=source,
+            api_id=api_id,
+            api_hash=api_hash,
+            phone=phone,
+        )
 
     def process_news(news_list: list) -> list:
         """
@@ -899,17 +999,21 @@ elif tab == "Анализ новостей":
             if is_crypto:
                 sentiment = sentiment_pipe.predict([text])[0]
                 sentiment_label = label_encoder.inverse_transform([sentiment])[0]
-                results.append({
-                    "Дата": news.get("date"),
-                    "Время": news.get("time"),
-                    "Новость": text,
-                    "Настроение": sentiment_label,
-                    "Ссылка": news.get("url", "-")
-                })
+                results.append(
+                    {
+                        "Дата": news.get("date"),
+                        "Время": news.get("time"),
+                        "Новость": text,
+                        "Настроение": sentiment_label,
+                        "Ссылка": news.get("url", "-"),
+                    }
+                )
         return results
 
-    source = st.selectbox("Источник новостей:", [
-        "if_market_news", "web3news", "cryptodaily", "slezisatoshi"])
+    source = st.selectbox(
+        "Источник новостей:",
+        ["if_market_news", "web3news", "cryptodaily", "slezisatoshi"],
+    )
     days_back = st.slider("За сколько дней назад брать новости?", 1, 30, 7)
 
     if st.button("Анализировать"):

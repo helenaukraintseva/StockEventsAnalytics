@@ -1,0 +1,14 @@
+streamlit
+pandas
+numpy
+requests
+plotly
+joblib
+psycopg2
+scikit-learn
+dotenv
+ta
+google-generativeai
+streamlit
+torch
+langchain-community

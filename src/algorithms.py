@@ -10,10 +10,10 @@ class AlgorithmA:
 
     def run(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
-        df['MA_5'] = df['Close'].rolling(5).mean()
-        df['Signal'] = 0
-        df.loc[df['Close'] > df['MA_5'], 'Signal'] = 1
-        df.loc[df['Close'] < df['MA_5'], 'Signal'] = -1
+        df["MA_5"] = df["Close"].rolling(5).mean()
+        df["Signal"] = 0
+        df.loc[df["Close"] > df["MA_5"], "Signal"] = 1
+        df.loc[df["Close"] < df["MA_5"], "Signal"] = -1
         return df
 
 
@@ -26,13 +26,13 @@ class AlgorithmRSI:
 
     def run(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
-        df['Delta'] = df['Close'].diff()
-        df['Gain'] = df['Delta'].clip(lower=0).rolling(14).mean()
-        df['Loss'] = -df['Delta'].clip(upper=0).rolling(14).mean()
-        df['RSI'] = 100 - 100 / (1 + df['Gain']/(df['Loss']+1e-9))
-        df['Signal'] = 0
-        df.loc[df['RSI'] < 30, 'Signal'] = 1
-        df.loc[df['RSI'] > 70, 'Signal'] = -1
+        df["Delta"] = df["Close"].diff()
+        df["Gain"] = df["Delta"].clip(lower=0).rolling(14).mean()
+        df["Loss"] = -df["Delta"].clip(upper=0).rolling(14).mean()
+        df["RSI"] = 100 - 100 / (1 + df["Gain"] / (df["Loss"] + 1e-9))
+        df["Signal"] = 0
+        df.loc[df["RSI"] < 30, "Signal"] = 1
+        df.loc[df["RSI"] > 70, "Signal"] = -1
         return df
 
 
@@ -45,10 +45,10 @@ class AlgorithmSMA:
 
     def run(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
-        df[f'SMA'] = df['close'].rolling(self.window).mean()
-        df['Signal'] = 0
-        df.loc[df['close'] < df[f'SMA'], 'Signal'] = 1
-        df.loc[df['close'] > df[f'SMA'], 'Signal'] = -1
+        df[f"SMA"] = df["close"].rolling(self.window).mean()
+        df["Signal"] = 0
+        df.loc[df["close"] < df[f"SMA"], "Signal"] = 1
+        df.loc[df["close"] > df[f"SMA"], "Signal"] = -1
         return df
 
 
@@ -61,10 +61,10 @@ class AlgorithmEMA:
 
     def run(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
-        df[f'EMA'] = df['close'].ewm(span=self.window, adjust=False).mean()
-        df['Signal'] = 0
-        df.loc[df['close'] < df[f'EMA'], 'Signal'] = 1
-        df.loc[df['close'] > df[f'EMA'], 'Signal'] = -1
+        df[f"EMA"] = df["close"].ewm(span=self.window, adjust=False).mean()
+        df["Signal"] = 0
+        df.loc[df["close"] < df[f"EMA"], "Signal"] = 1
+        df.loc[df["close"] > df[f"EMA"], "Signal"] = -1
         return df
 
 
@@ -80,14 +80,14 @@ class AlgorithmMACD:
 
     def run(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
-        df['EMA_fast'] = df['close'].ewm(span=self.fastperiod, adjust=False).mean()
-        df['EMA_slow'] = df['close'].ewm(span=self.slowperiod, adjust=False).mean()
-        df['MACD'] = df['EMA_fast'] - df['EMA_slow']
-        df['Signal_line'] = df['MACD'].ewm(span=self.signalperiod, adjust=False).mean()
-        df['MACD_Hist'] = df['MACD'] - df['Signal_line']
-        df['Signal'] = 0
-        df.loc[df['MACD'] > df['Signal_line'], 'Signal'] = -1
-        df.loc[df['MACD'] < df['Signal_line'], 'Signal'] = 1
+        df["EMA_fast"] = df["close"].ewm(span=self.fastperiod, adjust=False).mean()
+        df["EMA_slow"] = df["close"].ewm(span=self.slowperiod, adjust=False).mean()
+        df["MACD"] = df["EMA_fast"] - df["EMA_slow"]
+        df["Signal_line"] = df["MACD"].ewm(span=self.signalperiod, adjust=False).mean()
+        df["MACD_Hist"] = df["MACD"] - df["Signal_line"]
+        df["Signal"] = 0
+        df.loc[df["MACD"] > df["Signal_line"], "Signal"] = -1
+        df.loc[df["MACD"] < df["Signal_line"], "Signal"] = 1
         return df
 
 
@@ -118,34 +118,44 @@ class AlgorithmADX:
         :return: Копия DataFrame с добавленными столбцами для ADX.
         """
         df = data.copy()
-        df['PrevHigh'] = df['high'].shift(1)
-        df['PrevLow'] = df['low'].shift(1)
-        df['PrevClose'] = df['close'].shift(1)
-        df['TR'] = df[['high', 'PrevClose']].max(axis=1) - df[['low', 'PrevClose']].min(axis=1)
-        df['+DM'] = np.where((df['high'] - df['PrevHigh']) > (df['PrevLow'] - df['low']),
-                             np.maximum(df['high'] - df['PrevHigh'], 0), 0)
-        df['-DM'] = np.where((df['PrevLow'] - df['low']) > (df['high'] - df['PrevHigh']),
-                             np.maximum(df['PrevLow'] - df['low'], 0), 0)
-        df['TR_ema'] = df['TR'].ewm(alpha=1 / self.period, adjust=False).mean()
-        df['+DM_ema'] = df['+DM'].ewm(alpha=1 / self.period, adjust=False).mean()
-        df['-DM_ema'] = df['-DM'].ewm(alpha=1 / self.period, adjust=False).mean()
-        df['+DI'] = 100 * (df['+DM_ema'] / df['TR_ema'])
-        df['-DI'] = 100 * (df['-DM_ema'] / df['TR_ema'])
-        df['DX'] = ((df['+DI'] - df['-DI']).abs() / (df['+DI'] + df['-DI'])) * 100
-        df['ADX'] = df['DX'].ewm(alpha=1 / self.period, adjust=False).mean()
-        df['Signal'] = 0
-        df.loc[df['+DI'] > df['-DI'], 'Signal'] = 1
-        df.loc[df['+DI'] < df['-DI'], 'Signal'] = -1
-        df.drop(['PrevHigh', 'PrevLow', 'PrevClose'], axis=1, inplace=True)
+        df["PrevHigh"] = df["high"].shift(1)
+        df["PrevLow"] = df["low"].shift(1)
+        df["PrevClose"] = df["close"].shift(1)
+        df["TR"] = df[["high", "PrevClose"]].max(axis=1) - df[["low", "PrevClose"]].min(
+            axis=1
+        )
+        df["+DM"] = np.where(
+            (df["high"] - df["PrevHigh"]) > (df["PrevLow"] - df["low"]),
+            np.maximum(df["high"] - df["PrevHigh"], 0),
+            0,
+        )
+        df["-DM"] = np.where(
+            (df["PrevLow"] - df["low"]) > (df["high"] - df["PrevHigh"]),
+            np.maximum(df["PrevLow"] - df["low"], 0),
+            0,
+        )
+        df["TR_ema"] = df["TR"].ewm(alpha=1 / self.period, adjust=False).mean()
+        df["+DM_ema"] = df["+DM"].ewm(alpha=1 / self.period, adjust=False).mean()
+        df["-DM_ema"] = df["-DM"].ewm(alpha=1 / self.period, adjust=False).mean()
+        df["+DI"] = 100 * (df["+DM_ema"] / df["TR_ema"])
+        df["-DI"] = 100 * (df["-DM_ema"] / df["TR_ema"])
+        df["DX"] = ((df["+DI"] - df["-DI"]).abs() / (df["+DI"] + df["-DI"])) * 100
+        df["ADX"] = df["DX"].ewm(alpha=1 / self.period, adjust=False).mean()
+        df["Signal"] = 0
+        df.loc[df["+DI"] > df["-DI"], "Signal"] = 1
+        df.loc[df["+DI"] < df["-DI"], "Signal"] = -1
+        df.drop(["PrevHigh", "PrevLow", "PrevClose"], axis=1, inplace=True)
         return df
 
 
 class AlgorithmIchimoku:
-    def __init__(self,
-                 tenkan_period: int = 9,
-                 kijun_period: int = 26,
-                 senkou_span_b_period: int = 52,
-                 shift: int = 26):
+    def __init__(
+        self,
+        tenkan_period: int = 9,
+        kijun_period: int = 26,
+        senkou_span_b_period: int = 52,
+        shift: int = 26,
+    ):
         """
         Алгоритм расчёта Ichimoku Cloud.
         :param tenkan_period: Период для Tenkan-sen (Conversion Line).
@@ -174,24 +184,26 @@ class AlgorithmIchimoku:
         :return: Копия DataFrame с добавленными столбцами Ichimoku.
         """
         df = data.copy()
-        df['Tenkan_sen'] = (
-                                   df['high'].rolling(window=self.tenkan_period).max() +
-                                   df['low'].rolling(window=self.tenkan_period).min()
-                           ) / 2
-        df['Kijun_sen'] = (
-                                  df['high'].rolling(window=self.kijun_period).max() +
-                                  df['low'].rolling(window=self.kijun_period).min()
-                          ) / 2
-        df['Senkou_Span_A'] = ((df['Tenkan_sen'] + df['Kijun_sen']) / 2).shift(self.shift)
-        rolling_high = df['high'].rolling(window=self.senkou_span_b_period).max()
-        rolling_low = df['low'].rolling(window=self.senkou_span_b_period).min()
-        df['Senkou_Span_B'] = ((rolling_high + rolling_low) / 2).shift(self.shift)
-        df['Chikou_Span'] = df['close'].shift(-self.shift)
-        df['Signal'] = 0
-        df['Cloud_Upper'] = df[['Senkou_Span_A', 'Senkou_Span_B']].max(axis=1)
-        df['Cloud_Lower'] = df[['Senkou_Span_A', 'Senkou_Span_B']].min(axis=1)
-        df.loc[df['close'] > df['Cloud_Upper'], 'Signal'] = 1
-        df.loc[df['close'] < df['Cloud_Lower'], 'Signal'] = -1
+        df["Tenkan_sen"] = (
+            df["high"].rolling(window=self.tenkan_period).max()
+            + df["low"].rolling(window=self.tenkan_period).min()
+        ) / 2
+        df["Kijun_sen"] = (
+            df["high"].rolling(window=self.kijun_period).max()
+            + df["low"].rolling(window=self.kijun_period).min()
+        ) / 2
+        df["Senkou_Span_A"] = ((df["Tenkan_sen"] + df["Kijun_sen"]) / 2).shift(
+            self.shift
+        )
+        rolling_high = df["high"].rolling(window=self.senkou_span_b_period).max()
+        rolling_low = df["low"].rolling(window=self.senkou_span_b_period).min()
+        df["Senkou_Span_B"] = ((rolling_high + rolling_low) / 2).shift(self.shift)
+        df["Chikou_Span"] = df["close"].shift(-self.shift)
+        df["Signal"] = 0
+        df["Cloud_Upper"] = df[["Senkou_Span_A", "Senkou_Span_B"]].max(axis=1)
+        df["Cloud_Lower"] = df[["Senkou_Span_A", "Senkou_Span_B"]].min(axis=1)
+        df.loc[df["close"] > df["Cloud_Upper"], "Signal"] = 1
+        df.loc[df["close"] < df["Cloud_Lower"], "Signal"] = -1
         return df
 
 
@@ -223,16 +235,17 @@ class AlgorithmCCI:
         :return: Копия DataFrame с добавленным столбцом 'CCI' и 'Signal'.
         """
         df = data.copy()
-        df['TP'] = (df['high'] + df['low'] + df['close']) / 3.0
-        df['SMA_TP'] = df['TP'].rolling(self.period).mean()
+        df["TP"] = (df["high"] + df["low"] + df["close"]) / 3.0
+        df["SMA_TP"] = df["TP"].rolling(self.period).mean()
 
         def mean_abs_dev(x):
             return (x - x.mean()).abs().mean()
-        df['Mean_Dev'] = df['TP'].rolling(self.period).apply(mean_abs_dev, raw=False)
-        df['CCI'] = (df['TP'] - df['SMA_TP']) / (self.constant * df['Mean_Dev'])
-        df['Signal'] = 0
-        df.loc[df['CCI'] > 100, 'Signal'] = 1
-        df.loc[df['CCI'] < -100, 'Signal'] = -1
+
+        df["Mean_Dev"] = df["TP"].rolling(self.period).apply(mean_abs_dev, raw=False)
+        df["CCI"] = (df["TP"] - df["SMA_TP"]) / (self.constant * df["Mean_Dev"])
+        df["Signal"] = 0
+        df.loc[df["CCI"] > 100, "Signal"] = 1
+        df.loc[df["CCI"] < -100, "Signal"] = -1
         return df
 
 
@@ -263,13 +276,17 @@ class AlgorithmStochastic:
         :return: Копия DataFrame с добавленными столбцами '%K', '%D', 'Signal'.
         """
         df = data.copy()
-        df['Lowest_Low'] = df['low'].rolling(self.k_period).min()
-        df['Highest_High'] = df['high'].rolling(self.k_period).max()
-        df['%K'] = 100 * (df['close'] - df['Lowest_Low']) / (df['Highest_High'] - df['Lowest_Low'])
-        df['%D'] = df['%K'].rolling(self.d_period).mean()
-        df['Signal'] = 0
-        df.loc[df['%K'] > df['%D'], 'Signal'] = 1
-        df.loc[df['%K'] < df['%D'], 'Signal'] = -1
+        df["Lowest_Low"] = df["low"].rolling(self.k_period).min()
+        df["Highest_High"] = df["high"].rolling(self.k_period).max()
+        df["%K"] = (
+            100
+            * (df["close"] - df["Lowest_Low"])
+            / (df["Highest_High"] - df["Lowest_Low"])
+        )
+        df["%D"] = df["%K"].rolling(self.d_period).mean()
+        df["Signal"] = 0
+        df.loc[df["%K"] > df["%D"], "Signal"] = 1
+        df.loc[df["%K"] < df["%D"], "Signal"] = -1
         return df
 
 
@@ -296,12 +313,12 @@ class AlgorithmWilliamsR:
         :return: Копия DataFrame с '%R' и 'Signal'.
         """
         df = data.copy()
-        df['HH'] = df['high'].rolling(self.period).max()
-        df['LL'] = df['low'].rolling(self.period).min()
-        df['%R'] = -100 * (df['HH'] - df['close']) / (df['HH'] - df['LL'])
-        df['Signal'] = 0
-        df.loc[df['%R'] < -80, 'Signal'] = 1
-        df.loc[df['%R'] > -20, 'Signal'] = -1
+        df["HH"] = df["high"].rolling(self.period).max()
+        df["LL"] = df["low"].rolling(self.period).min()
+        df["%R"] = -100 * (df["HH"] - df["close"]) / (df["HH"] - df["LL"])
+        df["Signal"] = 0
+        df.loc[df["%R"] < -80, "Signal"] = 1
+        df.loc[df["%R"] > -20, "Signal"] = -1
         return df
 
 
@@ -328,22 +345,26 @@ class AlgorithmOBV:
         :return: Копия DataFrame со столбцами 'OBV' и 'Signal'.
         """
         df = data.copy()
-        df['OBV'] = 0
+        df["OBV"] = 0
         for i in range(1, len(df)):
-            if df['close'].iloc[i] > df['close'].iloc[i - 1]:
-                df.loc[df.index[i], 'OBV'] = df.loc[df.index[i - 1], 'OBV'] + df['volume'].iloc[i]
-            elif df['close'].iloc[i] < df['close'].iloc[i - 1]:
-                df.loc[df.index[i], 'OBV'] = df.loc[df.index[i - 1], 'OBV'] - df['volume'].iloc[i]
+            if df["close"].iloc[i] > df["close"].iloc[i - 1]:
+                df.loc[df.index[i], "OBV"] = (
+                    df.loc[df.index[i - 1], "OBV"] + df["volume"].iloc[i]
+                )
+            elif df["close"].iloc[i] < df["close"].iloc[i - 1]:
+                df.loc[df.index[i], "OBV"] = (
+                    df.loc[df.index[i - 1], "OBV"] - df["volume"].iloc[i]
+                )
             else:
-                df.loc[df.index[i], 'OBV'] = df.loc[df.index[i - 1], 'OBV']
-        df['Signal'] = 0
+                df.loc[df.index[i], "OBV"] = df.loc[df.index[i - 1], "OBV"]
+        df["Signal"] = 0
         for i in range(1, len(df)):
-            if df['OBV'].iloc[i] > df['OBV'].iloc[i - 1]:
-                df.loc[df.index[i], 'Signal'] = 1
-            elif df['OBV'].iloc[i] < df['OBV'].iloc[i - 1]:
-                df.loc[df.index[i], 'Signal'] = -1
+            if df["OBV"].iloc[i] > df["OBV"].iloc[i - 1]:
+                df.loc[df.index[i], "Signal"] = 1
+            elif df["OBV"].iloc[i] < df["OBV"].iloc[i - 1]:
+                df.loc[df.index[i], "Signal"] = -1
             else:
-                df.loc[df.index[i], 'Signal'] = 0
+                df.loc[df.index[i], "Signal"] = 0
         return df
 
 
@@ -369,14 +390,14 @@ class AlgorithmVWAP:
         :return: Копия DataFrame с добавленными столбцами 'TypicalPrice', 'Cumul_PV', 'Cumul_Volume', 'VWAP', 'Signal'.
         """
         df = data.copy()
-        df['TypicalPrice'] = (df['high'] + df['low'] + df['close']) / 3.0
-        df['PV'] = df['TypicalPrice'] * df['volume']
-        df['Cumul_PV'] = df['PV'].cumsum()
-        df['Cumul_Volume'] = df['volume'].cumsum()
-        df['VWAP'] = df['Cumul_PV'] / df['Cumul_Volume']
-        df['Signal'] = 0
-        df.loc[df['close'] > df['VWAP'], 'Signal'] = -1
-        df.loc[df['close'] < df['VWAP'], 'Signal'] = 1
+        df["TypicalPrice"] = (df["high"] + df["low"] + df["close"]) / 3.0
+        df["PV"] = df["TypicalPrice"] * df["volume"]
+        df["Cumul_PV"] = df["PV"].cumsum()
+        df["Cumul_Volume"] = df["volume"].cumsum()
+        df["VWAP"] = df["Cumul_PV"] / df["Cumul_Volume"]
+        df["Signal"] = 0
+        df.loc[df["close"] > df["VWAP"], "Signal"] = -1
+        df.loc[df["close"] < df["VWAP"], "Signal"] = 1
         return df
 
 
@@ -415,13 +436,13 @@ class AlgorithmBollingerBands:
         :return: Копия DataFrame с добавленными столбцами Bollinger Bands.
         """
         df = data.copy()
-        df['Boll_Middle'] = df['close'].rolling(self.window).mean()
-        df['Boll_Std'] = df['close'].rolling(self.window).std()
-        df['Boll_Upper'] = df['Boll_Middle'] + self.nbdev_up * df['Boll_Std']
-        df['Boll_Lower'] = df['Boll_Middle'] - self.nbdev_dn * df['Boll_Std']
-        df['Signal'] = 0
-        df.loc[df['close'] > df['Boll_Upper'], 'Signal'] = -1
-        df.loc[df['close'] < df['Boll_Lower'], 'Signal'] = 1
+        df["Boll_Middle"] = df["close"].rolling(self.window).mean()
+        df["Boll_Std"] = df["close"].rolling(self.window).std()
+        df["Boll_Upper"] = df["Boll_Middle"] + self.nbdev_up * df["Boll_Std"]
+        df["Boll_Lower"] = df["Boll_Middle"] - self.nbdev_dn * df["Boll_Std"]
+        df["Signal"] = 0
+        df.loc[df["close"] > df["Boll_Upper"], "Signal"] = -1
+        df.loc[df["close"] < df["Boll_Lower"], "Signal"] = 1
         return df
 
 
@@ -452,13 +473,15 @@ class AlgorithmATR:
         :return: Копия DataFrame с добавленными столбцами 'TR', 'ATR', 'Signal'.
         """
         df = data.copy()
-        df['PrevClose'] = df['close'].shift(1)
-        df['TR'] = df[['high', 'PrevClose']].max(axis=1) - df[['low', 'PrevClose']].min(axis=1)
-        df['ATR'] = df['TR'].ewm(span=self.period, adjust=False).mean()
-        df['Signal'] = 0
-        df.loc[df['TR'] > df['ATR'], 'Signal'] = 1
-        df.loc[df['TR'] < df['ATR'], 'Signal'] = -1
-        df.drop(columns=['PrevClose'], inplace=True)
+        df["PrevClose"] = df["close"].shift(1)
+        df["TR"] = df[["high", "PrevClose"]].max(axis=1) - df[["low", "PrevClose"]].min(
+            axis=1
+        )
+        df["ATR"] = df["TR"].ewm(span=self.period, adjust=False).mean()
+        df["Signal"] = 0
+        df.loc[df["TR"] > df["ATR"], "Signal"] = 1
+        df.loc[df["TR"] < df["ATR"], "Signal"] = -1
+        df.drop(columns=["PrevClose"], inplace=True)
         return df
 
 
@@ -497,21 +520,19 @@ class AlgorithmARIMA:
         :return: Копия DataFrame с добавленными столбцами 'ARIMA_Fitted' и 'Signal'.
         """
         df = data.copy()
-        self.model = ARIMA(df['close'], order=(self.p, self.d, self.q))
+        self.model = ARIMA(df["close"], order=(self.p, self.d, self.q))
         self.results = self.model.fit()
-        df['ARIMA_Fitted'] = self.results.fittedvalues
-        df['Signal'] = 0
-        mask_up = df['ARIMA_Fitted'] > df['close']
-        mask_dn = df['ARIMA_Fitted'] < df['close']
-        df.loc[mask_up, 'Signal'] = 1
-        df.loc[mask_dn, 'Signal'] = -1
+        df["ARIMA_Fitted"] = self.results.fittedvalues
+        df["Signal"] = 0
+        mask_up = df["ARIMA_Fitted"] > df["close"]
+        mask_dn = df["ARIMA_Fitted"] < df["close"]
+        df.loc[mask_up, "Signal"] = 1
+        df.loc[mask_dn, "Signal"] = -1
         return df
 
 
 class AlgorithmSARIMA:
-    def __init__(self,
-                 order=(1, 0, 1),
-                 seasonal_order=(0, 0, 0, 0)):
+    def __init__(self, order=(1, 0, 1), seasonal_order=(0, 0, 0, 0)):
         """
         Алгоритм на основе SARIMA (Seasonal ARIMA).
         :param order: (p, d, q) – порядок не-сезонной части модели.
@@ -539,19 +560,17 @@ class AlgorithmSARIMA:
         """
         df = data.copy()
         self.model = SARIMAX(
-            df['close'],
+            df["close"],
             order=self.order,
             seasonal_order=self.seasonal_order,
             enforce_stationarity=False,
-            enforce_invertibility=False
+            enforce_invertibility=False,
         )
         self.results = self.model.fit(disp=False)
-        df['SARIMA_Fitted'] = self.results.fittedvalues
-        df['Signal'] = 0
-        mask_up = df['SARIMA_Fitted'] < df['close']
-        mask_dn = df['SARIMA_Fitted'] > df['close']
-        df.loc[mask_up, 'Signal'] = 1
-        df.loc[mask_dn, 'Signal'] = -1
+        df["SARIMA_Fitted"] = self.results.fittedvalues
+        df["Signal"] = 0
+        mask_up = df["SARIMA_Fitted"] < df["close"]
+        mask_dn = df["SARIMA_Fitted"] > df["close"]
+        df.loc[mask_up, "Signal"] = 1
+        df.loc[mask_dn, "Signal"] = -1
         return df
-
-
