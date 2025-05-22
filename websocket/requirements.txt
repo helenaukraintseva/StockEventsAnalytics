@@ -1,0 +1,6 @@
+config==0.5.1
+numpy==2.2.5
+pandas==2.2.3
+psycopg2==2.9.10
+statsmodels==0.14.4
+websockets==15.0.1
