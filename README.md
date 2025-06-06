@@ -1,5 +1,7 @@
 📈 Crypto Monitoring Platform
 
+https://vkr-domen-test.ru/
+
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Enabled-red)](https://streamlit.io/)
 [![Build Status](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](https://pytest.org/)
